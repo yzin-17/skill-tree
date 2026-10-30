@@ -3,11 +3,11 @@
 首次创建：2026-10-31  
 最近更新：2026-10-31  
 对应规格：[发布规格](../specs/2026-10-31-github-release.md)  
-当前状态与证据：[实施任务](../tasks/2026-10-31-github-release.md)
+验收记录：[实施任务](../archive/tasks/2026-10-31-github-release.md)
 
 ## 下载与安装
 
-正式安装包发布到目标仓库的 Releases 页面，名称包含应用版本、构建号和 `macos-universal`。每个版本提供 `.dmg`、`.zip`、`build-info.json` 和 `SHA256SUMS`。
+正式安装包位于私有仓库的 [Releases 页面](https://github.com/yzin-17/skill-tree/releases)，当前为 [v0.1.0（构建 26）](https://github.com/yzin-17/skill-tree/releases/tag/v0.1.0)，下载需具有仓库访问权限。名称包含应用版本、构建号和 `macos-universal`，每个版本提供 `.dmg`、`.zip`、`build-info.json` 和 `SHA256SUMS`。
 
 DMG 中将 Skill Atlas 拖到 Applications 即可安装；ZIP 可直接解压使用。要求 macOS 14 或以上，同时包含 Apple Silicon 和 Intel 架构。当前为 ad hoc 临时签名，尚未经过 Apple 公证；首次打开如受到系统阻止，可在系统设置的隐私与安全性中处理。
 

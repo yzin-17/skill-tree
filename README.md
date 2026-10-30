@@ -23,6 +23,10 @@
 - 网络：URLSession + JSON API；离线计时，联网同步。Go 自管邮箱/密码账号，默认手动登录，令牌仅保存在本次内存；选择“记住登录”时使用 Keychain。
 - 未来：iOS/iPadOS 尽量共享 Swift 代码；Android/Windows 若需要则各写原生客户端，共享后端 API 和业务规则。
 
+## 下载安装
+
+[GitHub Release v0.1.0（构建 26）](https://github.com/yzin-17/skill-tree/releases/tag/v0.1.0) 提供 DMG、ZIP、构建信息与 SHA-256 清单，支持 macOS 14 及以上的 Apple Silicon 和 Intel。仓库为私有，下载需具有访问权限。当前采用 ad hoc 临时签名，尚未作 Apple 公证；安装和后续发布见 [GitHub 构建与发布](docs/guides/2026-10-31-github-release.md)。
+
 ## 本机运行
 
 ```sh
@@ -41,7 +45,7 @@ python3 scripts/install-macos.py
 
 | 文档 | 维护内容 |
 | --- | --- |
-| [GitHub 构建与发布](docs/guides/2026-10-31-github-release.md) | CI 触发、通用安装包、版本标签与 Release；[当前任务](docs/tasks/2026-10-31-github-release.md) |
+| [GitHub 构建与发布](docs/guides/2026-10-31-github-release.md) | CI 触发、通用安装包、版本标签与 Release；[发布验收](docs/archive/tasks/2026-10-31-github-release.md) |
 | [产品 Spec](docs/specs/2026-10-29-skill-atlas-v1.md) | 目标、范围、业务规则、稳定 AC、未决问题与测试策略；首版稳定契约入口 |
 | [界面修复 Spec](docs/specs/2026-10-30-ui-remediation.md) | 筛选、操作层级、密度、成长表达、成果与可访问性的当前契约 |
 | [成长日志月历 Spec](docs/specs/2026-10-30-activity-calendar.md) | 月历、日期详情与统计口径；[已完成任务](docs/archive/tasks/2026-10-30-activity-calendar.md) |
