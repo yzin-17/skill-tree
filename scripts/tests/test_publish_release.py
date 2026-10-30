@@ -3,6 +3,7 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -29,7 +30,8 @@ class ReleaseBoundaryTests(unittest.TestCase):
         self.metadata = {**version, 'tag': 'v' + version['version'], 'source_revision': REVISION,
                          'ci_run_url': f'https://github.com/{REPOSITORY}/actions/runs/{RUN_ID}',
                          'packages': self.packages, 'architectures': ['arm64', 'x86_64'],
-                         'bundle_id': 'local.skillatlas.app', 'signature': 'ad-hoc', 'notarized': False}
+                         'bundle_id': 'local.skillatlas.app', 'signature': 'ad-hoc', 'notarized': False,
+                         'minimum_macos': '14.0'}
         self.write_metadata()
 
     def write_metadata(self):
@@ -75,6 +77,24 @@ class ReleaseBoundaryTests(unittest.TestCase):
         with patch.object(release, 'get_release', return_value={'draft': True, 'body': 'unrelated', 'target_commitish': REVISION}), patch.object(release, 'gh') as gh:
             with self.assertRaises(ValueError):
                 release.publish(self.directory, self.metadata['tag'], REVISION, REPOSITORY, RUN_ID)
+            gh.assert_not_called()
+
+    def test_tag_404_still_discovers_a_draft(self):
+        response = subprocess.CompletedProcess([], 1, '', 'HTTP 404: Not Found')
+        draft = {'id': 1, 'tag_name': self.metadata['tag'], 'draft': True}
+        with patch.object(release.subprocess, 'run', return_value=response), patch.object(release, 'gh', return_value=json.dumps([draft])):
+            self.assertEqual(release.get_release(REPOSITORY, self.metadata['tag']), draft)
+
+    def test_tag_and_list_absence_means_no_release(self):
+        response = subprocess.CompletedProcess([], 1, '', 'HTTP 404: Not Found')
+        with patch.object(release.subprocess, 'run', return_value=response), patch.object(release, 'gh', return_value='[]'):
+            self.assertIsNone(release.get_release(REPOSITORY, self.metadata['tag']))
+
+    def test_permission_failure_does_not_look_like_absence(self):
+        response = subprocess.CompletedProcess([], 1, '', 'HTTP 403: Forbidden')
+        with patch.object(release.subprocess, 'run', return_value=response), patch.object(release, 'gh') as gh:
+            with self.assertRaises(RuntimeError):
+                release.get_release(REPOSITORY, self.metadata['tag'])
             gh.assert_not_called()
 
     def draft(self):

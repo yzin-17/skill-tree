@@ -63,9 +63,18 @@ def get_release(repository, tag):
                             capture_output=True, text=True)
     if result.returncode == 0:
         return json.loads(result.stdout)
-    if 'HTTP 404' in result.stderr or 'Not Found' in result.stderr:
-        return None
-    raise RuntimeError('无法查询目标 Release，已停止发布。')
+    if 'HTTP 404' not in result.stderr and 'Not Found' not in result.stderr:
+        raise RuntimeError('无法查询目标 Release，已停止发布。')
+    # 按标签查询只返回已发布版本；草稿必须从有权限的 Release 列表查找。
+    page = 1
+    while True:
+        entries = json.loads(gh('api', f'repos/{repository}/releases?per_page=100&page={page}'))
+        for entry in entries:
+            if entry['tag_name'] == tag:
+                return entry
+        if len(entries) < 100:
+            return None
+        page += 1
 
 
 def release_notes(metadata, repository, marker):
@@ -128,7 +137,14 @@ def publish(directory, tag, revision, repository, run_id):
             for name in assets:
                 if hashlib.sha256((Path(temporary) / name).read_bytes()).digest() != hashlib.sha256((directory / name).read_bytes()).digest():
                     raise ValueError('草稿下载校验失败，保持草稿状态。')
-    gh('release', 'edit', tag, '--repo', repository, '--draft=false', '--latest')
+    with tempfile.TemporaryDirectory(prefix='skillatlas-final-notes-') as temporary:
+        notes = Path(temporary) / 'release-notes.md'
+        text = release_notes(metadata, repository, marker)
+        publishing_run = os.environ.get('GITHUB_RUN_ID')
+        if publishing_run and publishing_run != str(run_id):
+            text += f'\n[接续发布记录](https://github.com/{repository}/actions/runs/{publishing_run})\n'
+        notes.write_text(text)
+        gh('release', 'edit', tag, '--repo', repository, '--draft=false', '--latest', '--notes-file', str(notes))
     final = get_release(repository, tag)
     if final is None or final['draft']:
         raise ValueError('正式发布状态未确认。')
@@ -140,8 +156,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory', type=Path, default=ROOT / 'dist')
     parser.add_argument('--tag', required=True)
+    parser.add_argument('--source-revision')
+    parser.add_argument('--source-run-id')
     args = parser.parse_args()
-    publish(args.directory, args.tag, os.environ['GITHUB_SHA'], os.environ['GITHUB_REPOSITORY'], os.environ['GITHUB_RUN_ID'])
+    publish(args.directory, args.tag, args.source_revision or os.environ['GITHUB_SHA'],
+            os.environ['GITHUB_REPOSITORY'], args.source_run_id or os.environ['GITHUB_RUN_ID'])
 
 
 if __name__ == '__main__':
