@@ -1,0 +1,10 @@
+{
+  "contract":"C-ACHIEVEMENT","version":1,"date":"2026-10-29",
+  "description":"职业与称号手动配置。条件使用 all，至少 1 项、最多 32 项；四类条件均满足才 eligible=true。成就不改变 XP。",
+  "conditions":{"skill_level":"必填 skill_id/gte，按权威总 XP 推导等级","focus_minutes":"必填 skill_id/gte；仅 source=timer 且有效的会话秒数累计后向下取分钟，补录排除","task_success_count":"必填 gte；可选 skill_id，按结算技能快照筛选有效成功尝试 ID","specific_task_success":"必填 task_id，不设置 gte；该任务至少一次有效成功尝试"},
+  "limits":"名称 1–80 字符，说明 4000 字符，阈值 1–1000000；拒绝重复条件/未知字段/他人引用；图标使用固定 skill icon_key 集合。",
+  "routes":{"GET /v1/career-nodes":"职业配置及条件证据、历史、当前职业 ID","POST /v1/career-nodes":"id/name/description/badge_key/parent_career_id?/sort_order/conditions/version=0","PATCH /v1/career-nodes/{id}":"同配置字段及 version，拒绝父级循环","POST /v1/career-nodes/{id}/transition":"稳定 id/version/from_career_id?；重新求值，通过后手动转职；有父级时要求父级已转职过","GET /v1/titles":"称号配置及证据、首次解锁/当前佩戴状态","POST /v1/titles":"id/name/description/icon_key/conditions/version=0","PATCH /v1/titles/{id}":"同配置字段及 version；修改条件后重新求值","POST /v1/titles/{id}/equip":"稳定 id/version；当前必须达标，切换时只保留一个佩戴","POST /v1/titles/unequip":"稳定 id；主动取消当前佩戴"},
+  "evidence":"每项含原条件、current/required/met、unit、source_type、source_ids（最多 200）和 sources_truncated；数值始终来自全部有效事实，不以证据数量代替聚合。",
+  "rules":{"career":"条件达标不自动转职；当前职业不随条件回退而移除，转职历史永久保留。再次转职重新检查条件和父级历史，不允许重复选择当前职业。","title":"创建/编辑称号、专注结算、任务结算/撤销在同一事务重新求值；首次达标追加解锁历史，失去条件保留历史并自动取消当前佩戴，禁止继续佩戴；重新达标可再次佩戴。","idempotency":"配置创建和操作使用稳定 UUID；同 ID 同内容返回原响应，不同内容 409。他人对象 404；过期版本 409。","history":"条件引用和成长来源保留；编辑配置不改历史转职/解锁的条件证据快照。"},
+  "fixtures":{"conditions":{"all":[{"type":"skill_level","skill_id":"10000000-0000-4000-8000-000000000001","gte":2},{"type":"focus_minutes","skill_id":"10000000-0000-4000-8000-000000000002","gte":60},{"type":"task_success_count","gte":1},{"type":"specific_task_success","task_id":"20000000-0000-4000-8000-000000000001"}]},"values":[2,60,1,1]}
+}

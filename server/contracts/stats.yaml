@@ -1,0 +1,41 @@
+{
+  "contract": "C-STATS",
+  "version": 1,
+  "date": "2026-10-29",
+  "description": "统计来自原始专注、成长流水、有效尝试及重试事实；日/周/月以账号 IANA 时区分桶，周一开始。",
+  "route": "GET /v1/stats/summary?from=<RFC3339>&to=<RFC3339>&bucket=day|week|month&skill_id=<uuid>&tree_id=<uuid>&task_id=<uuid>",
+  "range": "from 含边界、to 不含边界；默认当前账号当地日期最近 30 天；显式范围最多 370 天。all_time 为相同技能/树/任务筛选下不限制日期的累计。",
+  "rules": {
+    "focus": "以会话 ended_at 归属一个桶，不拆分跨日会话；累计秒数含补录，timer/manual 分列；主技能不可变，任务绑定按当前会话关联。",
+    "xp": "使用每条实际流水的 delta_xp，不对查询窗口秒数重新取整。时间 XP 按会话 ended_at，成功奖励按尝试 concluded_at，撤销负流水按撤销时间；窗口内净奖励可能为负，累计等级另查 progress。",
+    "attempt": "按 concluded_at；仅 reversed_at 为空的成功/失败进入有效集合；按尝试 ID 去重；技能/树筛选使用结算技能快照，任务当前绑定变化不改历史。",
+    "retry": "仅明确 retry 请求，时间为 created_at；技能/树筛选使用它所续接失败尝试的技能快照。撤销推进编号不计重试。",
+    "history": "职业及称号历史按账号与日期显示，history_scope=account；技能/树筛选只影响投入/成长/尝试指标，不隐藏账号成就历史。",
+    "sources": "区间及各桶返回 focus_ids/growth_ids/attempt_ids/retry_ids，可通过原始详情和活动来源下钻；撤销尝试仍可从历史查看，但不进入有效尝试来源。"
+  },
+  "output": "timezone/from/to/bucket/all_time/totals/series/skills/sources/career_history/title_history/history_scope；空窗口补零桶；成功率零分母为 null。技能投入分项按主技能，XP 按受益技能；多技能尝试在各技能中可出现，全局只计一次。",
+  "fixtures": [
+    {
+      "timezone": "Asia/Shanghai",
+      "at": "2026-10-25T16:01:00Z",
+      "bucket": "week",
+      "start": "2026-10-25T16:00:00Z"
+    },
+    {
+      "timezone": "Asia/Shanghai",
+      "at": "2026-10-31T16:00:00Z",
+      "bucket": "month",
+      "start": "2026-10-31T16:00:00Z"
+    },
+    {
+      "timezone": "America/New_York",
+      "at": "2026-11-01T06:30:00Z",
+      "bucket": "day",
+      "start": "2026-11-01T04:00:00Z"
+    }
+  ],
+  "source_routes": {
+    "GET /v1/growth-events/{id}": "当前账号的成长流水，返回来源 ID、XP 变更和被补偿流水；跨账号或不存在为 404。",
+    "GET /v1/task-retries/{id}": "当前账号的重试记录，返回任务、前后尝试编号及原失败尝试 ID；跨账号或不存在为 404。"
+  }
+}

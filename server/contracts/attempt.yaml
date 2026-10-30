@@ -1,0 +1,7 @@
+{
+  "contract":"C-ATTEMPT","version":1,"date":"2026-10-29",
+  "description":"手动结算保存稳定尝试 UUID、编号及关联技能/奖励快照。失败不发任务奖励；成功每奖励等级发 60 XP。",
+  "routes":{"POST /v1/tasks/{id}/attempts":"id、attempt_no、version、result(success|failed)、reason；返回不可变结算快照","GET /v1/tasks/{id}/attempts":"全部原始尝试、奖励和撤销，按编号降序；summary 为当前有效统计","GET /v1/task-attempts/{id}":"单个原始尝试及奖励/撤销事实","POST /v1/tasks/{id}/retry":"id、attempt_no、version；仅 failed，推进到下一编号的 in_progress","POST /v1/task-attempts/{id}/reverse":"id、reason；只撤销尚未开启后续编号的最新结算；补偿后开启新的 in_progress 编号"},
+  "rules":{"idempotency":"每次命令在发送前持久保存 ID 和请求。相同 ID/相同内容返回原响应快照，相同 ID/不同内容 409，他人 ID 404。不同 ID 争抢同一编号只有一方成功。读取当前状态使用 GET。","conclusion":"仅 todo/in_progress 可结算；attempt_no 和 version 必须匹配当前任务。失败原因可空，最多 4000 字符。concluded_at 由服务端产生。","snapshot":"成功和失败都保存结算时的全部关联技能及奖励等级；只有成功产生 task_rewards 和成长流水，包含零奖励关联；后续编辑不改历史。","retry":"稳定命令 ID；只从 failed 开启下一编号；旧失败与其统计保留；不生成提前完成的尝试或奖励。","reversal":"保留原尝试和奖励；以 task_reversals 和逐笔反向 growth_events 修正。重复同 ID 返回原结果；其他 ID 再撤销返回 409。不得撤销已开启后续编号的旧结算。","statistics":"total=successes+failures，仅 reversed_at 为空的尝试；success_rate=successes/total，零分母为 null；重试数为明确 retry 命令数，不把撤销推进编号计作失败重试；多技能仍按尝试 ID 计一次。"},
+  "fixtures":{"conclude":{"id":"30000000-0000-4000-8000-000000000001","attempt_no":1,"version":1,"result":"failed","reason":"尚未通过集成检查"},"counts":[{"successes":0,"failures":0,"rate":null},{"successes":1,"failures":1,"rate":0.5}]}
+}

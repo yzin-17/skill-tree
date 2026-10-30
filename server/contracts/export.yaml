@@ -1,0 +1,10 @@
+{
+  "contract":"C-EXPORT","version":1,"date":"2026-10-29",
+  "route":"GET /v1/export；身份取当前认证，不接受其他账号参数",
+  "format":"skill-atlas-export","format_version":1,
+  "fields":["format","format_version","exported_at","account","datasets","counts"],
+  "datasets":["skill_trees","skills","skill_links","tasks","task_skills","focus_sessions","task_attempts","task_attempt_skills","task_rewards","task_retry_requests","task_reversals","growth_events","activity_events","career_nodes","career_transitions","titles","user_titles","achievement_profiles","achievement_references","achievement_commands"],
+  "rules":{"scope":"只读当前账号，在同一可重复读数据库快照生成；包含归档、关系删除标记、撤销及原始奖励、条件/成就历史；不包含本机尚未上传的记录，客户端导出前应显示待传数量。","privacy":"账号仅 id/email/timezone/created_at；所有业务表使用字段白名单；不包含密码散列、令牌、认证会话、请求散列或内部响应缓存。","read":"解析 JSON，验证格式版本、全部数据集及 counts，按实体 ID 检查结构化关联；UTF-8，原生保存后重新读取校验。","history":"活动事件可能引用已删除技能或尚未结束的本地会话，保留原始事件来源，不要求这两类实体在当前表存在。成长、奖励、任务快照、职业、称号及关系引用必须完整。","restore":"首版提供可读导出，不提供恢复导入，也不将文件复制称为已验证恢复。"},
+  "fixture":{"format":"skill-atlas-export","format_version":1,"exported_at":"2026-10-29T00:00:00Z","account":{"id":"50000000-0000-4000-8000-000000000001","email":"export@example.invalid","timezone":"Asia/Shanghai","created_at":"2026-10-29T00:00:00Z"},"datasets":{},"counts":{}},
+  "fixture_rule":"检查器以 datasets 清单补齐空数组及零 counts；真实非空引用由数据库验收提供。"
+}

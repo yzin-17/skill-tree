@@ -1,0 +1,25 @@
+{
+  "contract": "C-CLOCK", "version": 1, "date": "2026-10-29",
+  "description": "一个设备只有一个计时现场；有效时长来自注入的单调时钟，界面刷新仅触发观察。",
+  "states": ["running", "paused", "finished"],
+  "rules": {
+    "identity": "开始时生成稳定 UUID，绑定账号、唯一主技能和可选任务，先持久化再展示运行",
+    "seconds": "内部保留小数秒，结束生成提交记录时对累计有效秒数向下取整；暂停和休息不计入",
+    "count_up": "运行期间累计单调时钟差值；单条记录上限 2678400 秒，到达后结束，与 C-FOCUS 保存边界一致",
+    "countdown": "到达目标即结束；延迟刷新不使有效时长超过目标",
+    "pomodoro": "专注和休息自动转换，最后一轮专注完成后结束，不追加最后休息；迟到的观察逐段越过边界",
+    "pause": "先结算到当前观察点，再暂停；继续建立新单调时钟锚点，不补暂停时间",
+    "wall_clock": "墙上时钟仅用于源时间记录，向前/向后调整不改变有效秒数",
+    "window": "关闭主窗口不结束引擎",
+    "sleep_exit": "系统将睡眠或正常退出时保存并暂停；恢复为暂停，不自动继续",
+    "crash": "重开仅使用最后持久化的有效时长，丢弃旧运行锚点，恢复为暂停，不补未观察区间",
+    "finish": "结束记录入队、结束事件与现场清除在同一本地事务中保存；重复结束不追加记录",
+    "signals": "开始/暂停/继续/结束进入持久事件队列；轮次转换只通知；完成通知以会话 ID 去重，通知失败不回滚专注保存"
+  },
+  "fixtures": {
+    "count_up": {"run": 20.5, "pause": 90, "resume_run": 50.5, "effective_seconds": 71},
+    "countdown": {"target": 60, "observed_after": 75, "effective_seconds": 60},
+    "pomodoro": {"target": 1500, "rest": 300, "rounds": 2, "observed_after": 1800, "effective_seconds": 1500, "phase": "focus", "round": 2},
+    "recovery": {"saved_seconds": 42, "unobserved_seconds": 500, "restored_seconds": 42, "state": "paused"}
+  }
+}

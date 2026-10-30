@@ -1,0 +1,18 @@
+{
+  "contract": "C-AUTH", "version": 1, "date": "2026-10-29",
+  "description": "Go 自管邮箱密码登录；传输仅允许 HTTPS。账号身份只取自服务端会话。",
+  "routes": {
+    "POST /v1/auth/register": {"input": ["email", "password", "timezone"], "success": 201},
+    "POST /v1/auth/login": {"input": ["email", "password"], "success": 200},
+    "POST /v1/auth/logout": {"success": 200, "replay": "同一凭据重复退出仍返回成功；该凭据立即失效"},
+    "GET /v1/me": {"success": 200, "output": ["id", "email", "timezone", "created_at"]},
+    "PATCH /v1/me": {"input": ["timezone"], "success": 200}
+  },
+  "request": "JSON，拒绝未知字段，最大 1 MiB；UTC RFC3339 时间；时区为 IANA 标识",
+  "password": "12–128 个字符；Argon2id m=65536 KiB t=3 p=2；随机 16 字节盐",
+  "session": "随机 32 字节不透明令牌，Bearer；仅存 SHA-256；有效期 30 天；退出即撤销；客户端仅存 Keychain",
+  "response": {"success": {"data": "返回值"}, "failure": {"error": {"code": "稳定错误码", "message": "中文说明"}}},
+  "errors": {"400": "无效输入、伪造身份字段", "401": "未登录、错误密码、过期或撤销", "404": "记录不存在或跨账号不可访问", "409": "邮箱重复", "429": "来源 IP 每 5 分钟最多 20 次登录/注册尝试"},
+  "privacy": "不记录请求正文、密码、令牌和数据库连接串；查询不得接受客户端指定用户身份；不存在与不属于本人资源均返回 404",
+  "fixtures": [{"email":"owner@example.invalid","password":"SkillAtlas-test-only-2026","timezone":"Asia/Shanghai"},{"email":"other@example.invalid","password":"SkillAtlas-test-only-2026","timezone":"UTC"}]
+}

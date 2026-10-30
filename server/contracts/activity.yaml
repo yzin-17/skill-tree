@@ -1,0 +1,67 @@
+{
+  "contract": "C-ACTIVITY",
+  "version": 1,
+  "date": "2026-10-29",
+  "description": "领域操作与事件在同一事务写入；客户端只产生专注生命周期事件。历史不随归档或撤销删除。",
+  "producers": {
+    "server": [
+      "tree.created",
+      "tree.updated",
+      "skill.created",
+      "skill.updated",
+      "skill.deleted",
+      "link.created",
+      "link.updated",
+      "link.deleted",
+      "task.created",
+      "task.updated",
+      "task.canceled",
+      "task.retried",
+      "attempt.success",
+      "attempt.failed",
+      "attempt.reversed",
+      "focus.recorded",
+      "focus.bound",
+      "growth.accrued",
+      "skill.level_up",
+      "career.created",
+      "career.updated",
+      "career.transitioned",
+      "title.created",
+      "title.updated",
+      "title.unlocked",
+      "title.equipped",
+      "title.unequipped"
+    ],
+    "client": [
+      "focus.started",
+      "focus.paused",
+      "focus.resumed",
+      "focus.ended"
+    ]
+  },
+  "routes": {
+    "GET /v1/activity-events": "查询本账号；limit 为 1–200，默认 50；cursor 为上一页 next_cursor；type/skill_id/from/to 可选，from 含边界、to 不含边界",
+    "POST /v1/activity-events": "仅客户端事件；id、type、entity_id、skill_id、task_id?、occurred_at、mode、effective_seconds；最终会话可尚未入库"
+  },
+  "ordering": "occurred_at DESC, id DESC；UTC RFC3339，时间过滤与游标同时适用",
+  "ownership": "身份取 Bearer；所有技能/任务/会话引用校验同一账号；不允许覆盖其他用户事件或实体；已归档实体历史仍可查询",
+  "deduplication": "服务端来源键包含业务实体/版本或稳定请求 ID；客户端 id 为 UUID 且 source_key=client:<id>，同内容重放返回原事件，不同内容 409",
+  "result": {
+    "items": "事件数组，含 id/type/producer/entity_type/entity_id/summary/skill_ids/metadata/occurred_at/created_at",
+    "next_cursor": "下一页游标，无更多数据时为空字符串"
+  },
+  "fixtures": [
+    {
+      "type": "focus.started",
+      "producer": "client",
+      "mode": "count_up",
+      "effective_seconds": 0
+    },
+    {
+      "type": "skill.created",
+      "producer": "server",
+      "summary": "创建技能"
+    }
+  ]
+}

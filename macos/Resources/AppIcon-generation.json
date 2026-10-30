@@ -1,0 +1,11 @@
+{
+  "created_at": "2026-10-31",
+  "tool": "image_gen.imagegen",
+  "mode": "built-in generate with palette reference",
+  "transparent_background": true,
+  "source": "/Users/yzin/.codex/generated_images/01a1841a-310b-7161-b0d2-cb21866f2569/exec-65eb683c-7fb5-48db-8839-fccc82016847.png",
+  "referenced_image_paths": [
+    "/var/folders/v1/gvgmk4cx1mz59vj63jj8_9m80000gn/T/codex-clipboard-7e9f8355-746b-4ecf-82a4-ae4c6095315b.png"
+  ],
+  "prompt": "Use case: logo-brand.\nAsset type: final production macOS app icon for Skill Atlas, a skill-growth constellation app.\nPrimary request: a WHITE app icon with unmistakable STARS forming a small constellation.\nInput image: the supplied reference is for the soft pearlescent pastel COLOR PALETTE only.\nSubject: one large, clearly recognizable four-point NORTH STAR, with deeply concave sides and long tapered tips, plus two smaller four-point stars. Arrange these three actual star shapes as an elegant ascending constellation, from a small lower-left star through the large central star to a small upper-right star. Connect them with one delicate but visible neutral gray path. Stars, not circles. The large star is the main silhouette and must be obvious at 32px.\nComposition: one centered rounded-square WHITE tile, generous rounded corners, balanced margins. The whole constellation occupies about 65 percent of the tile. Main star occupies about 42 percent of tile width; the small stars about 12 to 17 percent each. Keep the design sparse and distinctive.\nColor and material: white porcelain tile, luminous satin-pearl star surfaces with soft cloudy blush pink, lavender, mint, pale peach and ice cyan. White highlights and gentle cool-gray edge shading make the pastel stars readable on white. Subtle shallow relief, restrained soft shadows. A very fine continuous cool-gray outer rim defines the tile's mathematically smooth rounded-square silhouette.\nOutput: one square app icon, straight-on, high craft, no presentation sheet. Canvas outside the white rounded-square tile is genuinely transparent with a clean smooth alpha boundary.\nConstraints: no text, no letters, no watermark, no eyes, no ghost, no circular ring nodes, no triangle network symbol, no dark background, no neon, no glitter particles, no galaxy scene. A clean white tile containing a legible constellation of actual star shapes."
+}

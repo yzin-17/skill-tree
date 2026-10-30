@@ -1,0 +1,106 @@
+name: 构建与发布
+
+on:
+  pull_request:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: 源码与后端测试
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine@sha256:266d3c257594e195b309ae9d1805e54c788f1d7b375f56bf6c367aac6c917e7b
+        env:
+          POSTGRES_USER: skillatlas_ci
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: skillatlas_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U skillatlas_ci -d skillatlas_ci"
+          --health-interval 3s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - name: 校验文档和发布边界
+        run: |
+          python3 scripts/check-docs.py
+          python3 -m unittest discover -s scripts/tests -v
+      - name: 执行 Go 集成测试
+        working-directory: server
+        env:
+          TEST_DATABASE_URL: postgres://skillatlas_ci:ci-only-password@127.0.0.1:5432/skillatlas_ci?sslmode=disable
+        run: go test -race -count=1 ./...
+
+  macos:
+    name: macOS 通用安装包
+    needs: validate
+    runs-on: macos-26
+    timeout-minutes: 25
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: 记录工具链并测试核心
+        run: |
+          xcodebuild -version
+          swift --version
+          swift test --package-path macos
+      - name: 构建双架构应用
+        run: python3 scripts/build-macos.py --release --universal --client-resources config/distribution
+      - name: 生成并验证安装包
+        shell: bash
+        run: |
+          args=(--app .runtime/DerivedData/Build/Products/Release/SkillAtlas.app --output dist --revision "$GITHUB_SHA")
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            args+=(--tag "$RELEASE_TAG")
+          fi
+          python3 scripts/package-macos.py "${args[@]}"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: SkillAtlas-macos-universal
+          path: dist/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+  publish:
+    name: 发布 Release
+    needs: macos
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: SkillAtlas-macos-universal
+          path: dist
+      - name: 校验本次产物并正式发布
+        run: python3 scripts/publish-release.py --directory dist --tag "$RELEASE_TAG"

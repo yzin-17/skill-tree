@@ -1,0 +1,13 @@
+{
+  "contract":"C-SKILL","version":1,"date":"2026-10-29",
+  "description":"手动维护技能树与技能；等级由成长记录计算，创建时 Lv.1。",
+  "icons":["star","code","database","network","terminal","book","brain","pencil","music","camera","paint","language","heart","fitness","leaf","compass"],
+  "themes":["blue","gold","sage","rose"],
+  "routes":{"GET /v1/skill-trees":"本账号树列表；include_archived=true 包含归档","POST /v1/skill-trees":"TreeInput；稳定 id，初始 version=0","GET /v1/skill-trees/{id}":"单棵树","PATCH /v1/skill-trees/{id}":"完整可编辑字段快照与当前 version；树只归档，不删除","GET /v1/skills":"本账号技能列表，可按 tree_id 筛选；include_archived=true 包含归档树/技能","POST /v1/skills":"SkillInput；稳定 id，初始 version=0","GET /v1/skills/{id}":"技能详情","PATCH /v1/skills/{id}":"完整可编辑字段快照与当前 version；tree_id 不可变","DELETE /v1/skills/{id}?version={version}":"只有无子技能、关系、任务、会话、成长及成就引用时允许删除；保留审计事件"},
+  "tree_input":["id","name","description","theme_key","sort_order","archived","version"],
+  "skill_input":["id","tree_id","parent_skill_id","name","description","icon_key","sort_order","archived","version"],
+  "rules":{"name":"去空白后 1–80 字符","description":"最多 4000 字符","sort_order":"-1000000 至 1000000","parent":"同一账号同一树；禁止自身及任意长度父子环；新选择的父级必须未归档","archive":"记录与引用保留，默认选择器排除归档；归档树下技能默认一并隐藏","version":"创建后为 1，每次编辑递增；过期编辑或删除返回 409","deduplication":"创建 ID 相同且原始内容相同返回现有实体，不增加事件；内容不同 409；跨账号 ID 为 404"},
+  "output":"对应实体字段与 created_at、updated_at、archived_at、version；UTC RFC3339；无 password/token；XP 由 C-FOCUS 单独提供",
+  "errors":{"400":"字段/图标/主题/UUID 无效、父子环或跨树父级","404":"记录不存在或引用不属于本人","409":"旧版本、同 ID 不同创建内容、归档引用、删除仍有引用"},
+  "fixtures":{"tree":{"id":"10000000-0000-4000-8000-000000000001","name":"后端开发","description":"服务端技能","theme_key":"blue","sort_order":0,"archived":false,"version":0},"skill":{"id":"10000000-0000-4000-8000-000000000002","tree_id":"10000000-0000-4000-8000-000000000001","parent_skill_id":null,"name":"Go","description":"接口与服务","icon_key":"code","sort_order":0,"archived":false,"version":0}}
+}

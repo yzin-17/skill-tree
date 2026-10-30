@@ -1,0 +1,81 @@
+{
+  "contract": "C-FOCUS",
+  "version": 1,
+  "date": "2026-10-29",
+  "description": "最终会话由客户端以开始时持久化的 UUID 上传；单会话只属于一个主技能，时间 XP 在同技能累计秒数上取整。",
+  "routes": {
+    "POST /v1/focus-sessions": "FocusInput；返回 session、awarded_xp、settled_progress；同 ID 原始内容重放返回相同结算快照",
+    "GET /v1/focus-sessions": "按 task_id/skill_id/from/to 过滤；limit 1–200、cursor；返回 items/next_cursor/total_seconds/count；汇总不受分页游标影响",
+    "GET /v1/focus-sessions/{id}": "最终会话详情",
+    "PATCH /v1/focus-sessions/{id}/task": "task_id 可空，version 必填；只改关联，原始创建内容散列保留，主技能与 XP 不变",
+    "GET /v1/skills/{id}/progress": "当前权威技能进度",
+    "GET /v1/progress": "本账号全部技能的权威进度"
+  },
+  "input": [
+    "id",
+    "skill_id",
+    "task_id",
+    "mode",
+    "target_seconds",
+    "effective_seconds",
+    "started_at",
+    "ended_at",
+    "note",
+    "source",
+    "pomodoro_rounds"
+  ],
+  "modes": [
+    "count_up",
+    "countdown",
+    "pomodoro",
+    "manual"
+  ],
+  "rules": {
+    "seconds": "0–2678400 的整数；手动补录至少 1 秒；暂停/休息不计入",
+    "source": "timer 或 manual；manual 必须使用 manual 模式",
+    "target": "倒计时和番茄钟为 1–86400 秒；番茄轮数 1–24；倒计时有效时间不超过目标；其他模式 target_seconds 为空",
+    "wall_clock": "计时器按单调时钟提交有效秒数，墙上时钟调整不改变 XP；开始/结束均保留实际源时间，允许计时器结束时间早于开始并以 clock_adjusted 标记；补录区间必须有序且容纳有效秒数",
+    "ownership": "技能、任务均属于当前账号；已归档但属于本人的历史会话仍可上传，选择器只展示未归档对象",
+    "rounding": "时间 XP = floor(累计有效秒数/60)，本次 XP 为新增前后之差；任务奖励另记",
+    "level": "1+floor(total_xp/60)，xp_current=total_xp%60，xp_required=60；前置为软提示，不阻止发 XP",
+    "manual": "补录发时间 XP，来源透明；真实专注成就只统计 timer",
+    "replay": "相同原始内容不新增会话/成长/事件，内容冲突 409，跨账号 ID/关联 404；后续重绑不使旧上传请求重复发 XP",
+    "version": "初始 1，重绑递增；相同目标重放原样返回，其他旧版本 409"
+  },
+  "ordering": "列表按 ended_at DESC,id DESC；from 含边界、to 不含边界；UTC RFC3339；unbound=true 只列自由会话；相同重绑目标的重放原样返回，其他旧版本为 409；任务详情含 total_focus_seconds 和 focus_count",
+  "progress_fields": [
+    "skill_id",
+    "total_focus_seconds",
+    "time_xp",
+    "task_bonus_xp",
+    "total_xp",
+    "level",
+    "xp_current",
+    "xp_required",
+    "unlocked",
+    "missing_prerequisites"
+  ],
+  "fixtures": {
+    "seconds": [
+      {
+        "before": 0,
+        "added": 20,
+        "awarded": 0
+      },
+      {
+        "before": 20,
+        "added": 50,
+        "awarded": 1
+      }
+    ],
+    "levels": [
+      {
+        "time_xp": 40,
+        "task_bonus_xp": 30,
+        "total_xp": 70,
+        "level": 2,
+        "xp_current": 10
+      }
+    ]
+  }
+}

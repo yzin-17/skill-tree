@@ -1,0 +1,53 @@
+{
+  "contract": "C-TASK",
+  "version": 1,
+  "date": "2026-10-29",
+  "description": "手动任务、多技能奖励配置与取消；创建/编辑不产生尝试或 XP。",
+  "routes": {
+    "GET /v1/tasks": "可选 status、skill_id；置顶优先，再按截止时间和创建时间排序",
+    "POST /v1/tasks": "稳定 id，version=0；初始 todo 或 in_progress",
+    "GET /v1/tasks/{id}": "本账号任务及技能奖励配置",
+    "PATCH /v1/tasks/{id}": "完整可编辑字段与当前 version；旧版本 409"
+  },
+  "input": [
+    "id",
+    "title",
+    "description",
+    "success_criteria",
+    "status",
+    "due_at",
+    "pinned",
+    "skills",
+    "version"
+  ],
+  "rules": {
+    "title": "去空白后 1–140 字符",
+    "description": "最多 10000 字符",
+    "success_criteria": "最多 4000 字符",
+    "skills": "零到 64 项；skill_id 唯一且属于本人；reward_levels 为 0–1000000 整数，0 表示只关联",
+    "due_at": "可空，RFC3339；过期不自动失败",
+    "state": "todo/in_progress 可以互转或取消；failed 可以取消，重新开始只能用 retry；success/canceled 只能保留原状态编辑元数据；历史尝试及奖励快照不受配置编辑影响",
+    "archived": "新增关联必须是未归档技能；已有归档关联允许原样保留或移除",
+    "deduplication": "同创建 ID 和相同初始内容返回原任务，不增加事件；冲突内容 409",
+    "cancel": "取消不生成尝试、不发 XP、不删除已有尝试历史"
+  },
+  "output": "id/title/description/success_criteria/status/due_at/pinned/skills/current_attempt_no/version/created_at/updated_at；关联技能按 UUID 排序；total_focus_seconds/focus_count 为有效关联专注汇总；attempt_summary 含 total/successes/failures/retries/success_rate（无结算为 null）",
+  "fixtures": {
+    "task": {
+      "id": "20000000-0000-4000-8000-000000000001",
+      "title": "完成登录接口",
+      "description": "实现账号功能",
+      "success_criteria": "错误密码有清楚反馈",
+      "status": "todo",
+      "due_at": null,
+      "pinned": true,
+      "skills": [
+        {
+          "skill_id": "10000000-0000-4000-8000-000000000002",
+          "reward_levels": 2
+        }
+      ],
+      "version": 0
+    }
+  }
+}

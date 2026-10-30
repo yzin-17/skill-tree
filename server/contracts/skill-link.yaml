@@ -1,0 +1,7 @@
+{
+  "contract":"C-LINK","version":1,"date":"2026-10-29",
+  "description":"from 技能依赖 to 技能；前置有方向，普通关联只提供导航，不参与锁定。支持跨树，全部前置达标时 unlocked=true。软锁只提示，不阻止计时或奖励。",
+  "routes":{"POST /v1/skill-links":"id/from_skill_id/to_skill_id/link_type/required_level；稳定 ID 重放，同内容返回原边，冲突 409","GET /v1/skill-links":"当前有效关系；可选 skill_id（任一端点）和 tree_id（任一端点所属树）","PATCH /v1/skill-links/{id}":"version/required_level；只允许修改前置阈值","DELETE /v1/skill-links/{id}":"保留删除标记和历史，重复删除本账号同边成功；他人边 404"},
+  "rules":{"prerequisite":"required_level 默认 1，范围 1–1000000；拒绝自引用、重复有效边和任意长度前置环","reference":"required_level 必须为空；允许前置反方向的普通关联；按有向端点去重","ownership":"两端必须属于当前身份，新关系只接受未归档技能；既有关系和历史允许引用归档对象","progress":"missing_prerequisites 给出尚未满足的目标技能 ID、名称、当前/要求等级；普通关联不参与；撤销 XP 后即时重算","deletion":"关系采用删除标记；已删除关系仍保留来源事件。引用该关系的两端技能保留，使用归档。"},
+  "fixtures":[{"id":"40000000-0000-4000-8000-000000000001","from_skill_id":"10000000-0000-4000-8000-000000000001","to_skill_id":"10000000-0000-4000-8000-000000000002","link_type":"prerequisite","required_level":2},{"id":"40000000-0000-4000-8000-000000000002","from_skill_id":"10000000-0000-4000-8000-000000000002","to_skill_id":"10000000-0000-4000-8000-000000000001","link_type":"reference","required_level":null}]
+}
