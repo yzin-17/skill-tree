@@ -43,3 +43,9 @@
 GitHub CLI 初次登录只包含 `repo`、`read:org` 和 `gist`；提交 `.github/workflows/` 还需 `workflow`，已向用户提供增补设备授权入口。已创建私有空仓库 `https://github.com/yzin-17/skill-tree`，当前目录初始化为 `main`，本地身份使用 GitHub noreply 邮箱。
 
 待纳入源码的 443 个文件约 41.19 MiB；检查运行目录、工具下载、编译缓存、生成工程和私有文件均被忽略。逐文件比对当前 `.runtime/local.env` 的数据库密码和连接串，未发现副本；私钥头检测唯一命中是用于拒绝私钥的短测试夹具，不含实际私钥。
+
+### G1：推送凭据核对
+
+初始本地提交为 `b651156d32bf8fd81312aeffb5940fdd3cbd0167`。用户补齐 `workflow` 权限后，REST 返回的作用域已包含该项，但首次 Git 推送仍被拒绝。核对发现 Git 从 Xcode 系统配置优先调用了旧的凭据 helper，实际凭据与当前 CLI 不同。
+
+仅在本仓库的 `.git/config` 重置 helper 列表并选用 `gh auth git-credential`，不修改系统钥匙串或其他仓库。核对 Git 与 CLI 返回的凭据一致后，继续推送。首次失败没有写入远端分支或创建版本标签。
