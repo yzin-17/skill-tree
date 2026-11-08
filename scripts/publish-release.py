@@ -78,7 +78,7 @@ def get_release(repository, tag):
 
 
 def release_notes(metadata, repository, marker):
-    return f"""Skill Atlas {metadata['version']}（构建 {metadata['build']}）
+    return f"""Skill Atlas {metadata['version']}
 
 macOS 原生个人成长工具，支持技能星图、任务结算、专注计时、经验等级和成长日志月历。
 
@@ -117,7 +117,7 @@ def publish(directory, tag, revision, repository, run_id):
             notes = Path(temporary) / 'release-notes.md'
             notes.write_text(release_notes(metadata, repository, marker))
             gh('release', 'create', tag, '--repo', repository, '--verify-tag', '--draft',
-               '--target', revision, '--title', f"Skill Atlas {metadata['version']}（构建 {metadata['build']}）",
+               '--target', revision, '--title', f"Skill Atlas {metadata['version']}",
                '--notes-file', str(notes))
     gh('release', 'upload', tag, '--repo', repository, '--clobber', *[str(directory / name) for name in assets])
     uploaded = get_release(repository, tag)

@@ -25,7 +25,7 @@
 
 ## 下载安装
 
-[GitHub Release v0.1.0（构建 26）](https://github.com/yzin-17/skill-tree/releases/tag/v0.1.0) 提供 DMG、ZIP、构建信息与 SHA-256 清单，支持 macOS 14 及以上的 Apple Silicon 和 Intel。仓库为私有，下载需具有访问权限。当前采用 ad hoc 临时签名，尚未作 Apple 公证；安装和后续发布见 [GitHub 构建与发布](docs/guides/2026-10-31-github-release.md)。
+[GitHub Release v0.1.1](https://github.com/yzin-17/skill-tree/releases/tag/v0.1.1) 提供 DMG、ZIP、构建信息与 SHA-256 清单，支持 macOS 14 及以上的 Apple Silicon 和 Intel。仓库为私有，下载需具有访问权限。当前采用 ad hoc 临时签名，尚未作 Apple 公证；安装和后续发布见 [GitHub 构建与发布](docs/guides/2026-10-31-github-release.md)。
 
 ## 本机运行
 
@@ -39,7 +39,7 @@ python3 scripts/install-macos.py
 
 需要局域网内其他 Mac 访问时，执行 `python3 scripts/lan.py up`，再将生成的 `dist/lan-setup.zip` 复制到其他 Mac 安装公开根证书，并配置说明里的 `.local:8448` 后端地址。私有 CA 管理本机和局域网两个 HTTPS 入口的证书续期，旧安装包选择自定义地址后无需重新构建，公开根证书可从 `http://<本机主机名>.local:8081/root.crt` 下载；详见[局域网接入说明](docs/guides/2026-10-29-local-operation.md#局域网私有-ca-访问)。
 
-当前已验收版本为 0.1.0（构建 26），默认 Go/PostgreSQL 在 Docker 中运行，支持手动配置 HTTPS 后端地址。星图的范围选择与搜索靠左排列，新建技能集中在标题行；任务图钉可直接切换置顶；成长日志默认打开月历，按天查看有效完成、专注和原始记录；默认账号密码登录，记住登录为可选。日常操作见 [使用说明](docs/guides/2026-10-29-user-guide.md)，本次结果见[图标验收](docs/reviews/2026-10-31-app-icon.md)，后端配置见[后端地址验收](docs/tasks/backend-address/evidence/2026-10-30-implementation.md)，界面精简见[界面精简验收](docs/reviews/2026-10-30-ui-labels.md)，星图布局见[星图工具栏验收](docs/reviews/2026-10-30-skill-toolbar.md)，既有结果见[图钉交互验收](docs/reviews/2026-10-30-task-pin.md)、[月历原生验收](docs/tasks/activity-calendar/evidence/2026-10-30-implementation.md)与[登录修复验收](docs/tasks/optional-login/evidence/2026-10-30-implementation.md)。首版、8 组界面及成长路径的证据保留于[交付记录](docs/archive/tasks/2026-10-29-skill-atlas-v1.md#current)、[界面验收记录](docs/tasks/ui-remediation/evidence/2026-10-30-native-acceptance.md)和[成长路径验收](docs/tasks/growth-paths/evidence/2026-10-30-implementation.md)。
+当前发布版本为 `0.1.1`，默认 Go/PostgreSQL 在 Docker 中运行，支持手动配置 HTTPS 后端地址。星图的范围选择与搜索靠左排列，新建技能集中在标题行；任务图钉可直接切换置顶；成长日志默认打开月历，按天查看有效完成、专注和原始记录；默认账号密码登录，记住登录为可选。日常操作见 [使用说明](docs/guides/2026-10-29-user-guide.md)，本次结果见[图标验收](docs/reviews/2026-10-31-app-icon.md)，后端配置见[后端地址验收](docs/tasks/backend-address/evidence/2026-10-30-implementation.md)，界面精简见[界面精简验收](docs/reviews/2026-10-30-ui-labels.md)，星图布局见[星图工具栏验收](docs/reviews/2026-10-30-skill-toolbar.md)，既有结果见[图钉交互验收](docs/reviews/2026-10-30-task-pin.md)、[月历原生验收](docs/tasks/activity-calendar/evidence/2026-10-30-implementation.md)与[登录修复验收](docs/tasks/optional-login/evidence/2026-10-30-implementation.md)。首版、8 组界面及成长路径的证据保留于[交付记录](docs/archive/tasks/2026-10-29-skill-atlas-v1.md#current)、[界面验收记录](docs/tasks/ui-remediation/evidence/2026-10-30-native-acceptance.md)和[成长路径验收](docs/tasks/growth-paths/evidence/2026-10-30-implementation.md)。
 
 全界面说明文字补充清理已完成，构建 16 已通过逐页原生复验；结果见 [已完成文案清理任务](docs/archive/tasks/2026-10-30-ui-copy-cleanup.md)。
 

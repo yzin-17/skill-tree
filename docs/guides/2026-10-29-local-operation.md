@@ -113,7 +113,7 @@ python3 scripts/build-macos.py --release
 
 最低目标为 macOS 14；当前产物在 Apple Silicon 本机构建。包标识为 `local.skillatlas.app`，使用 ad hoc 本机签名。所选交付方式是本机安装，Developer ID 公证及 App Store 提交不适用。
 
-当前交付为 0.1.0（构建 26），新应用图标已完成系统读回验收，见[图标验收](../reviews/2026-10-31-app-icon.md)；手动后端地址见[后端地址验收](../tasks/backend-address/evidence/2026-10-30-implementation.md)；界面文字精简见[界面精简验收](../reviews/2026-10-30-ui-labels.md)；星图工具栏和初始缩放见[星图工具栏验收](../reviews/2026-10-30-skill-toolbar.md)；任务图钉直接操作见[图钉交互验收](../reviews/2026-10-30-task-pin.md)；默认手动登录、原账号数据及月历见[登录验收](../tasks/optional-login/evidence/2026-10-30-implementation.md)和[月历验收](../tasks/activity-calendar/evidence/2026-10-30-implementation.md)。首版安装与系统交互历史证据保留于 [G4](../archive/tasks/skill-atlas-v1/2026-10-29-gates.md#g4)。
+当前发布版本为 `0.1.1`，新应用图标已完成系统读回验收，见[图标验收](../reviews/2026-10-31-app-icon.md)；手动后端地址见[后端地址验收](../tasks/backend-address/evidence/2026-10-30-implementation.md)；界面文字精简见[界面精简验收](../reviews/2026-10-30-ui-labels.md)；星图工具栏和初始缩放见[星图工具栏验收](../reviews/2026-10-30-skill-toolbar.md)；任务图钉直接操作见[图钉交互验收](../reviews/2026-10-30-task-pin.md)；默认手动登录、原账号数据及月历见[登录验收](../tasks/optional-login/evidence/2026-10-30-implementation.md)和[月历验收](../tasks/activity-calendar/evidence/2026-10-30-implementation.md)。首版安装与系统交互历史证据保留于 [G4](../archive/tasks/skill-atlas-v1/2026-10-29-gates.md#g4)。
 
 ## 数据和认证
 
