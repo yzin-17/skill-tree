@@ -1,13 +1,13 @@
 # GitHub 构建、打包与发布
 
 首次创建：2026-10-31  
-最近更新：2026-10-31  
+最近更新：2026-11-08\
 对应规格：[发布规格](../specs/2026-10-31-github-release.md)  
 验收记录：[实施任务](../archive/tasks/2026-10-31-github-release.md)
 
 ## 下载与安装
 
-正式安装包位于私有仓库的 [Releases 页面](https://github.com/yzin-17/skill-tree/releases)，当前为 [v0.1.0（构建 26）](https://github.com/yzin-17/skill-tree/releases/tag/v0.1.0)，下载需具有仓库访问权限。名称包含应用版本、构建号和 `macos-universal`，每个版本提供 `.dmg`、`.zip`、`build-info.json` 和 `SHA256SUMS`。
+正式安装包位于私有仓库的 [Releases 页面](https://github.com/yzin-17/skill-tree/releases)，当前准备发布 [v0.1.1（构建 27）](https://github.com/yzin-17/skill-tree/releases/tag/v0.1.1)，下载需具有仓库访问权限。名称包含应用版本、构建号和 `macos-universal`，每个版本提供 `.dmg`、`.zip`、`build-info.json` 和 `SHA256SUMS`。
 
 DMG 中将 Skill Atlas 拖到 Applications 即可安装；ZIP 可直接解压使用。要求 macOS 14 或以上，同时包含 Apple Silicon 和 Intel 架构。当前为 ad hoc 临时签名，尚未经过 Apple 公证；首次打开如受到系统阻止，可在系统设置的隐私与安全性中处理。
 
@@ -17,7 +17,7 @@ DMG 中将 Skill Atlas 拖到 Applications 即可安装；ZIP 可直接解压使
 shasum -a 256 -c SHA256SUMS
 ```
 
-后端单独运行，见[本机运行说明](2026-10-29-local-operation.md)。登录页与设置均可编辑 HTTPS 后端地址。发布配置中的公共证书对应当前本机 Docker 后端；自定义后端保持现有证书校验。更换当前本机服务证书时需同步公共发布配置，私钥继续留在本机。
+后端单独运行，见[本机运行说明](2026-10-29-local-operation.md)。登录页与设置均可编辑 HTTPS 后端地址。发布配置中的公开根 CA 对应当前本机 Docker 后端；默认地址按该根 CA 验证证书链，自定义后端同时接受系统证书信任。服务端叶证书自动续期无需更新发布配置；只有更换根 CA 时才需要同步公共发布配置，私钥始终保留在后端 CA 卷。
 
 ## 工作流入口
 
@@ -56,7 +56,7 @@ git push origin v0.1.1
 python3 -m unittest discover -s scripts/tests -v
 actionlint .github/workflows/release.yml
 python3 scripts/build-macos.py --release --universal --client-resources config/distribution
-python3 scripts/package-macos.py --app .runtime/DerivedData/Build/Products/Release/SkillAtlas.app --output dist --tag v0.1.0
+python3 scripts/package-macos.py --app .runtime/DerivedData/Build/Products/Release/SkillAtlas.app --output dist --tag v0.1.1
 ```
 
 示例标签按当前版本替换；输出目录已有同名资产时工具拒绝覆盖。原有 `python3 scripts/install-macos.py` 保持本机构建与安装方式，默认继续使用本机 `.runtime` 公共连接资料。

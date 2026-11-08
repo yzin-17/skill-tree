@@ -8,5 +8,5 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /skillatlas ./cmd/api
 FROM scratch
 COPY --from=build /skillatlas /skillatlas
 USER 65532:65532
-EXPOSE 8447
+EXPOSE 8080
 ENTRYPOINT ["/skillatlas"]

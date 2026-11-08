@@ -1,0 +1,40 @@
+{
+	admin off
+	persist_config off
+	auto_https disable_redirects
+	skip_install_trust
+	default_sni 127.0.0.1
+	pki {
+		ca local {
+			name "Skill Atlas LAN"
+		}
+	}
+}
+
+(public_ca) {
+	@ca {
+		path /root.crt
+		method GET HEAD
+	}
+	handle @ca {
+		root * /public
+		header Content-Type application/x-x509-ca-cert
+		header Content-Disposition "attachment; filename=skillatlas-root.crt"
+		header X-Content-Type-Options nosniff
+		file_server
+	}
+}
+
+(api_routes) {
+	import public_ca
+	handle {
+		reverse_proxy api:8080
+	}
+}
+
+https://localhost:8447, https://127.0.0.1:8447 {
+	tls internal
+	import api_routes
+}
+
+import /etc/caddy/{$LAN_SITE_FILE}

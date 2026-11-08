@@ -1,0 +1,11 @@
+https://{$LAN_HOST}:8448 {
+	tls internal
+	import api_routes
+}
+
+http://:8081 {
+	import public_ca
+	handle {
+		respond 404
+	}
+}

@@ -20,7 +20,7 @@ import (
 )
 
 func main() {
-	healthcheck := flag.Bool("healthcheck", false, "检查本机 HTTPS 健康状态")
+	healthcheck := flag.Bool("healthcheck", false, "检查本机服务健康状态")
 	flag.Parse()
 	c, err := config.Load()
 	if err != nil {
@@ -28,20 +28,26 @@ func main() {
 		os.Exit(1)
 	}
 	if *healthcheck {
-		cert, err := os.ReadFile(c.TLSCert)
-		if err != nil {
-			os.Exit(1)
+		transport := &http.Transport{}
+		scheme := "http"
+		if !c.TLSByProxy {
+			cert, err := os.ReadFile(c.TLSCert)
+			if err != nil {
+				os.Exit(1)
+			}
+			roots := x509.NewCertPool()
+			if !roots.AppendCertsFromPEM(cert) {
+				os.Exit(1)
+			}
+			transport.TLSClientConfig = &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS12}
+			scheme = "https"
 		}
-		roots := x509.NewCertPool()
-		if !roots.AppendCertsFromPEM(cert) {
-			os.Exit(1)
-		}
-		client := &http.Client{Timeout: 3 * time.Second, Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS12}}}
+		client := &http.Client{Timeout: 3 * time.Second, Transport: transport}
 		_, port, err := net.SplitHostPort(c.Address)
 		if err != nil {
 			os.Exit(1)
 		}
-		response, err := client.Get("https://" + net.JoinHostPort("localhost", port) + "/health")
+		response, err := client.Get(scheme + "://" + net.JoinHostPort("localhost", port) + "/health")
 		if err != nil {
 			os.Exit(1)
 		}
@@ -72,9 +78,15 @@ func main() {
 		defer cancel()
 		server.Shutdown(shutdown)
 	}()
-	slog.Info("Skill Atlas HTTPS 已启动", "version", httpapi.Version)
-	if err = server.ListenAndServeTLS(c.TLSCert, c.TLSKey); err != nil && err != http.ErrServerClosed {
-		slog.Error("HTTPS 服务退出")
+	if c.TLSByProxy {
+		slog.Info("Skill Atlas 内部 HTTP 已启动，由代理终止 TLS", "version", httpapi.Version)
+		err = server.ListenAndServe()
+	} else {
+		slog.Info("Skill Atlas HTTPS 已启动", "version", httpapi.Version)
+		err = server.ListenAndServeTLS(c.TLSCert, c.TLSKey)
+	}
+	if err != nil && err != http.ErrServerClosed {
+		slog.Error("HTTP 服务退出")
 		os.Exit(1)
 	}
 }

@@ -46,14 +46,13 @@ public final class LocalCertificateDelegate: NSObject, URLSessionTaskDelegate, S
             if ProcessInfo.processInfo.environment["SKILLATLAS_TLS_DIAGNOSTIC"] == "1" { print("TLS 主机、证书或认证方法不匹配：\(challenge.protectionSpace.host)") }
             completionHandler(.cancelAuthenticationChallenge, nil); return
         }
-        guard let chain = SecTrustCopyCertificateChain(trust) as? [SecCertificate],
-              let leaf = chain.first, SecCertificateCopyData(leaf) as Data == certificate,
-              let anchor = SecCertificateCreateWithData(nil, certificate as CFData) else {
+        guard let anchor = SecCertificateCreateWithData(nil, certificate as CFData) else {
             completionHandler(allowSystemTrust ? .performDefaultHandling : .cancelAuthenticationChallenge, nil); return
         }
         SecTrustSetPolicies(trust, SecPolicyCreateSSL(true, host as CFString))
+        // 信任锚可为根 CA 或旧叶证书；由系统验证完整链、有效期与主机名。
         SecTrustSetAnchorCertificates(trust, [anchor] as CFArray)
-        SecTrustSetAnchorCertificatesOnly(trust, true)
+        SecTrustSetAnchorCertificatesOnly(trust, !allowSystemTrust)
         var trustError: CFError?
         guard SecTrustEvaluateWithError(trust, &trustError) else {
             if ProcessInfo.processInfo.environment["SKILLATLAS_TLS_DIAGNOSTIC"] == "1" { print("TLS 验证：\(String(describing: trustError))") }

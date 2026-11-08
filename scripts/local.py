@@ -21,7 +21,7 @@ def run(args, **kwargs):
 def load_environment():
     return dict(line.split('=', 1) for line in ENV_FILE.read_text().splitlines() if line and not line.startswith('#'))
 
-def prepare(renew_certificate=False):
+def prepare():
     RUNTIME.mkdir(mode=0o700, exist_ok=True)
     RUNTIME.chmod(0o700)
     if not ENV_FILE.exists():
@@ -39,19 +39,21 @@ def prepare(renew_certificate=False):
                   'API_PORT': '8447', 'DATABASE_PORT': '55437', 'LOCAL_UID': str(os.getuid()), 'LOCAL_GID': str(os.getgid())}
         ENV_FILE.write_text(''.join(f'{key}={value}\n' for key, value in values.items()))
         ENV_FILE.chmod(0o600)
+    public = RUNTIME / 'lan/public'
+    public.mkdir(mode=0o755, parents=True, exist_ok=True)
+    public.chmod(0o755)
+    env = load_environment()
+    ca = RUNTIME / 'lan/root.crt'
+    if ca.exists(): publish_root(ca.read_text(), env)
+    return env
+
+def publish_root(pem, env):
     tls = RUNTIME / 'tls'
     tls.mkdir(mode=0o700, exist_ok=True)
-    if renew_certificate or not (tls / 'cert.pem').exists():
-        run(['openssl', 'req', '-x509', '-newkey', 'ec', '-pkeyopt', 'ec_paramgen_curve:P-256', '-nodes',
-             '-days', '365', '-subj', '/CN=localhost', '-addext', 'subjectAltName=DNS:localhost,IP:127.0.0.1',
-             '-addext', 'extendedKeyUsage=serverAuth', '-addext', 'keyUsage=digitalSignature', '-addext', 'basicConstraints=critical,CA:FALSE',
-             '-keyout', str(tls / 'key.pem'), '-out', str(tls / 'cert.pem')], capture_output=True)
-        (tls / 'key.pem').chmod(0o600)
-    run(['openssl', 'x509', '-in', str(tls / 'cert.pem'), '-outform', 'DER', '-out', str(tls / 'cert.der')], capture_output=True)
-    env = load_environment()
+    certificate = ssl.PEM_cert_to_DER_cert(pem)
+    (tls / 'cert.der').write_bytes(certificate)
     (RUNTIME / 'client-config.json').write_text(json.dumps({'base_url': 'https://localhost:' + env['API_PORT'],
-        'certificate_sha256': hashlib.sha256((tls / 'cert.der').read_bytes()).hexdigest()}, indent=2) + '\n')
-    return env
+        'certificate_sha256': hashlib.sha256(certificate).hexdigest()}, indent=2) + '\n')
 
 def compose(*args):
     return ['docker', 'compose', '--env-file', str(ENV_FILE), '-f', str(ROOT / 'dev/compose.yaml'), *args]
@@ -68,19 +70,27 @@ def database():
 
 def health():
     env = load_environment()
-    context = ssl.create_default_context(cafile=str(RUNTIME / 'tls/cert.pem'))
-    with urllib.request.urlopen('https://localhost:' + env['API_PORT'] + '/health', context=context, timeout=5) as response:
+    context = ssl.create_default_context(cafile=str(RUNTIME / 'lan/root.crt'))
+    opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), urllib.request.HTTPSHandler(context=context))
+    with opener.open('https://localhost:' + env['API_PORT'] + '/health', timeout=5) as response:
         print(response.read().decode().strip())
+
+def up():
+    env = database()
+    run(compose('up', '-d', '--build', '--wait', '--wait-timeout', '90', 'api', 'lan-proxy'), env={**os.environ, **env})
+    import lan
+    lan.export_ca(lan.settings())
+    health()
 
 def main():
     parser = argparse.ArgumentParser(description='Skill Atlas 本机开发与运行工具')
     parser.add_argument('action', choices=['prepare', 'renew-certificate', 'db', 'up', 'down', 'status', 'health', 'test'])
     parser.add_argument('packages', nargs='*')
     args = parser.parse_args()
-    if args.action == 'prepare': prepare(); print('本机配置已准备，凭据未输出。')
-    elif args.action == 'renew-certificate': prepare(renew_certificate=True); print('证书已更新；重启 API 并重新构建应用以更新固定公钥。')
+    if args.action == 'prepare': prepare(); print('本机配置已准备；首次构建客户端前请先 up 以取得公开根证书。')
+    elif args.action == 'renew-certificate': print('服务端证书由 Caddy 自动续期，无需手动更新；公开根证书可通过 scripts/lan.py export-ca 导出。')
     elif args.action == 'db': database()
-    elif args.action == 'up': database(); run(compose('up', '-d', '--build', '--wait', '--wait-timeout', '90', 'api')); health()
+    elif args.action == 'up': up()
     elif args.action == 'down': run(compose('down'))
     elif args.action == 'status': run(compose('ps'))
     elif args.action == 'health': health()

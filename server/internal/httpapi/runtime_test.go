@@ -33,6 +33,11 @@ import (
 )
 
 func TestI1ActualAPIProcessAndRestart(t *testing.T) {
+	t.Run("独立TLS", func(t *testing.T) { testAPIProcessAndRestart(t, false) })
+	t.Run("代理内部HTTP", func(t *testing.T) { testAPIProcessAndRestart(t, true) })
+}
+
+func testAPIProcessAndRestart(t *testing.T, proxyTLS bool) {
 	db := testdb.Open(t)
 	directory := t.TempDir()
 	serverRoot, err := filepath.Abs("../..")
@@ -80,6 +85,9 @@ func TestI1ActualAPIProcessAndRestart(t *testing.T) {
 	port := listener.Addr().(*net.TCPAddr).Port
 	listener.Close()
 	baseURL := "https://localhost:" + strconv.Itoa(port)
+	if proxyTLS {
+		baseURL = "http://localhost:" + strconv.Itoa(port)
+	}
 	roots := x509.NewCertPool()
 	roots.AppendCertsFromPEM(certPEM)
 	transport := &http.Transport{TLSClientConfig: &tls.Config{RootCAs: roots, MinVersion: tls.VersionTLS12}}
@@ -109,7 +117,10 @@ func TestI1ActualAPIProcessAndRestart(t *testing.T) {
 	t.Cleanup(stop)
 	start := func() {
 		process = exec.Command(binary)
-		process.Env = append(os.Environ(), "DATABASE_URL="+address.String(), "LISTEN_ADDR=127.0.0.1:"+strconv.Itoa(port), "TLS_CERT="+certPath, "TLS_KEY="+keyPath)
+		process.Env = append(os.Environ(), "DATABASE_URL="+address.String(), "LISTEN_ADDR=127.0.0.1:"+strconv.Itoa(port), "TLS_TERMINATED_BY_PROXY=false", "TLS_CERT="+certPath, "TLS_KEY="+keyPath)
+		if proxyTLS {
+			process.Env = append(process.Env, "TLS_TERMINATED_BY_PROXY=true", "TLS_CERT=", "TLS_KEY=")
+		}
 		log, err = os.Create(filepath.Join(directory, "api.log"))
 		if err != nil {
 			t.Fatal(err)
@@ -127,6 +138,11 @@ func TestI1ActualAPIProcessAndRestart(t *testing.T) {
 			if err == nil {
 				response.Body.Close()
 				if response.StatusCode == 200 {
+					probe := exec.Command(binary, "-healthcheck")
+					probe.Env = process.Env
+					if output, err := probe.CombinedOutput(); err != nil {
+						t.Fatalf("实际健康检查命令失败：%v %s", err, output)
+					}
 					return
 				}
 			}

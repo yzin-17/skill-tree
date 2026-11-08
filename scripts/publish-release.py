@@ -80,13 +80,19 @@ def get_release(repository, tag):
 def release_notes(metadata, repository, marker):
     return f"""Skill Atlas {metadata['version']}（构建 {metadata['build']}）
 
-macOS 原生个人成长工具，支持技能星图、任务结算、专注计时、经验等级和成长日志月历。本版包含白底珠光星形应用图标。
+macOS 原生个人成长工具，支持技能星图、任务结算、专注计时、经验等级和成长日志月历。
+
+本次更新：
+
+- 本机与局域网 HTTPS 入口统一由私有 CA 自动签发、续期证书。
+- 客户端内置信任根 CA，服务端叶证书轮换后无需重新安装客户端。
+- 提供公开根证书下载地址 `http://<后端主机名>:8081/root.crt`，便于其他设备首次接入。
 
 安装要求与使用：
 
 - macOS {metadata['minimum_macos']} 及以上，通用安装包同时支持 Apple Silicon 与 Intel。
 - 下载 DMG 后将 Skill Atlas 拖到 Applications；也可解压 ZIP 使用。
-- 后端独立运行，可在登录页或设置中手动配置 HTTPS 地址；本版默认公共连接配置对应当前本机 Docker 后端。
+- 后端独立运行，可在登录页或设置中手动配置 HTTPS 地址；本版默认连接配置包含当前本机 Docker 后端的公开根 CA，叶证书续期无需更新发布配置。
 - 本版采用 ad hoc 临时签名，尚未经过 Apple 公证；首次打开如被系统阻止，请在系统设置的隐私与安全性中处理。
 - 将两个安装包、构建信息和 SHA256SUMS 放在同一目录，执行 `shasum -a 256 -c SHA256SUMS` 核对下载。
 

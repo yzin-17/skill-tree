@@ -1,6 +1,6 @@
 # Skill Atlas｜macOS 原生技能树项目
 
-> 首次创建：2026-10-29；最近更新：2026-10-31；文档版本：v1.0。
+> 首次创建：2026-10-29；最近更新：2026-11-08；文档版本：v1.0。
 > 范围：首版实现、运行说明与验收。交付范围与审查结论见 [交付记录](docs/archive/tasks/2026-10-29-skill-atlas-v1.md#current)。
 
 这是一个以**手动创建**为核心的个人成长工具：手动组织技能树、创建任务、按次专注、结算成功或失败，使用经验、等级、阶段进阶和称号可视化成长。
@@ -36,6 +36,8 @@ python3 scripts/install-macos.py
 ```
 
 后端地址为 `https://localhost:8447`；数据库使用独立 Docker 持久卷 `skillatlas-postgres-v1`。安装脚本生成 Release 应用并安装到 `~/Applications/Skill Atlas.app`，更新前保留旧应用副本。详见 [本机运行与安装](docs/guides/2026-10-29-local-operation.md)。
+
+需要局域网内其他 Mac 访问时，执行 `python3 scripts/lan.py up`，再将生成的 `dist/lan-setup.zip` 复制到其他 Mac 安装公开根证书，并配置说明里的 `.local:8448` 后端地址。私有 CA 管理本机和局域网两个 HTTPS 入口的证书续期，旧安装包选择自定义地址后无需重新构建，公开根证书可从 `http://<本机主机名>.local:8081/root.crt` 下载；详见[局域网接入说明](docs/guides/2026-10-29-local-operation.md#局域网私有-ca-访问)。
 
 当前已验收版本为 0.1.0（构建 26），默认 Go/PostgreSQL 在 Docker 中运行，支持手动配置 HTTPS 后端地址。星图的范围选择与搜索靠左排列，新建技能集中在标题行；任务图钉可直接切换置顶；成长日志默认打开月历，按天查看有效完成、专注和原始记录；默认账号密码登录，记住登录为可选。日常操作见 [使用说明](docs/guides/2026-10-29-user-guide.md)，本次结果见[图标验收](docs/reviews/2026-10-31-app-icon.md)，后端配置见[后端地址验收](docs/tasks/backend-address/evidence/2026-10-30-implementation.md)，界面精简见[界面精简验收](docs/reviews/2026-10-30-ui-labels.md)，星图布局见[星图工具栏验收](docs/reviews/2026-10-30-skill-toolbar.md)，既有结果见[图钉交互验收](docs/reviews/2026-10-30-task-pin.md)、[月历原生验收](docs/tasks/activity-calendar/evidence/2026-10-30-implementation.md)与[登录修复验收](docs/tasks/optional-login/evidence/2026-10-30-implementation.md)。首版、8 组界面及成长路径的证据保留于[交付记录](docs/archive/tasks/2026-10-29-skill-atlas-v1.md#current)、[界面验收记录](docs/tasks/ui-remediation/evidence/2026-10-30-native-acceptance.md)和[成长路径验收](docs/tasks/growth-paths/evidence/2026-10-30-implementation.md)。
 
