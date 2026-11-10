@@ -16,7 +16,7 @@ struct SkillAtlasApp: App {
                     if let focus = delegate.store.focus?.snapshot {
                         Divider()
                         Text("有效专注 \(AtlasFormat.duration(focus.effectiveSeconds))")
-                        Button(focus.status == .running ? "暂停专注" : "继续专注") { delegate.toggleFocus() }
+                        Button(focus.status == .running ? "暂停专注" : focus.continueTitle) { delegate.toggleFocus() }
                             .keyboardShortcut("p", modifiers: [.command, .shift])
                         Button("结束并保存") { delegate.finishFocus() }
                     }
@@ -43,7 +43,7 @@ final class AtlasApplicationDelegate: NSObject, NSApplicationDelegate {
         window.setFrameAutosaveName("SkillAtlasMainWindow")
         if !window.setFrameUsingName("SkillAtlasMainWindow") { window.center() }
         self.window = window
-        focusRuntime = FocusRuntime(store: store) { [weak self] in self?.showWindow() }
+        focusRuntime = FocusRuntime(store: store, window: window) { [weak self] in self?.showWindow() }
         showWindow()
         DevelopmentCapture.schedule()
     }

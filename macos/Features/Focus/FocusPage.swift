@@ -38,12 +38,7 @@ struct FocusWorkspaceView: View {
                     }
                 }
                 FocusSyncPanel()
-                HStack {
-                    VStack(alignment: .leading, spacing: 6) { Text("到点提醒").font(.callout.weight(.medium)); Text(store.notifications.status).font(.caption).foregroundStyle(AtlasTheme.muted) }
-                    Spacer()
-                    if store.notifications.enabled { Button("关闭提醒") { store.notifications.disable() } }
-                    else { Button("开启提醒") { Task { await store.notifications.enable() } } }
-                }
+                FocusReminderSettings()
                 Divider(); FocusHistoryView()
             }.padding(24).frame(maxWidth: 1100, alignment: .leading).frame(maxWidth: .infinity)
         }.background(AtlasTheme.ground)
@@ -106,7 +101,7 @@ struct FocusWorkspaceView: View {
                         .font(.callout).foregroundStyle(AtlasTheme.muted)
                 }
                 Spacer()
-                Label(current.status == .paused ? "已暂停" : current.phase == .rest ? "休息中" : "专注中", systemImage: current.status == .paused ? "pause.circle" : current.phase == .rest ? "cup.and.saucer" : "timer")
+                Label(current.pendingPhase != nil ? "等待确认" : current.status == .paused ? "已暂停" : current.phase == .rest ? "休息中" : "专注中", systemImage: current.status == .paused ? "pause.circle" : current.phase == .rest ? "cup.and.saucer" : "timer")
                     .font(.callout).foregroundStyle(AtlasTheme.muted)
             }
             Text(AtlasFormat.clock(current.remainingSeconds ?? current.effectiveSeconds))
@@ -118,7 +113,7 @@ struct FocusWorkspaceView: View {
             }.font(.callout).foregroundStyle(AtlasTheme.muted)
             TextField("结束备注（可选）", text: Binding(get: { store.focus?.snapshot?.note ?? "" }, set: { value in perform { try store.focus?.updateNote(value) } })).textFieldStyle(.roundedBorder)
             HStack(spacing: 14) {
-                Button(current.status == .running ? "暂停" : "继续", systemImage: current.status == .running ? "pause.fill" : "play.fill") {
+                Button(current.status == .running ? "暂停" : current.continueTitle, systemImage: current.status == .running ? "pause.fill" : "play.fill") {
                     perform { if current.status == .running { try store.focus?.pause() } else { try store.focus?.resume() } }
                 }.buttonStyle(.borderedProminent).controlSize(.large)
                 Button("结束并保存", systemImage: "stop.fill") { perform { try store.focus?.finish() } }.controlSize(.large)
@@ -145,6 +140,28 @@ struct FocusWorkspaceView: View {
         }
     }
     private func perform(_ action: () throws -> Void) { do { try action(); error = nil } catch { self.error = error.localizedDescription } }
+}
+
+struct FocusReminderSettings: View {
+    @Environment(ApplicationStore.self) private var store
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("到点提醒").font(.callout.weight(.medium))
+            HStack {
+                Toggle("声音提醒", isOn: Binding(get: { store.notifications.soundEnabled }, set: { store.notifications.setSoundEnabled($0) })).toggleStyle(.switch)
+                Spacer()
+                Button("试听") { store.notifications.previewSound() }
+            }
+            Text("专注结束、休息结束时播放提示音。").font(.caption).foregroundStyle(AtlasTheme.muted)
+            HStack {
+                Text(store.notifications.status).font(.caption).foregroundStyle(AtlasTheme.muted)
+                Spacer()
+                if store.notifications.needsSystemSettings { Button("通知设置…") { store.notifications.openSystemSettings() } }
+                if store.notifications.enabled { Button("关闭系统横幅") { store.notifications.disable() } }
+                else { Button("开启系统横幅") { Task { await store.notifications.enable() } } }
+            }
+        }.task { await store.notifications.refresh() }
+    }
 }
 
 struct FocusSyncPanel: View {

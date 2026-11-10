@@ -37,24 +37,22 @@ public struct FocusEngine: Sendable {
             if consumed < available { break }
             let boundary = reading.wall.addingTimeInterval(-remaining)
             if value.configuration.mode == .pomodoro && value.phase == .focus && value.round < value.configuration.rounds {
-                value.phaseElapsed = 0
-                if value.configuration.restSeconds == 0 {
-                    value.round += 1
-                    signals.append(signal(.roundStarted, value, at: boundary))
-                } else {
-                    value.phase = .rest
-                    signals.append(signal(.restStarted, value, at: boundary))
-                }
+                value.pendingPhase = value.configuration.restSeconds == 0 ? .focus : .rest
+                value.status = .paused
+                signals.append(signal(.phaseEnded, value, at: boundary))
+                signals.append(signal(.paused, value, at: boundary))
             } else if value.configuration.mode == .pomodoro && value.phase == .rest {
-                value.phase = .focus; value.round += 1; value.phaseElapsed = 0
-                signals.append(signal(.roundStarted, value, at: boundary))
+                value.pendingPhase = .focus
+                value.status = .paused
+                signals.append(signal(.phaseEnded, value, at: boundary))
+                signals.append(signal(.paused, value, at: boundary))
             } else {
                 value.status = .finished; value.endedAt = boundary; value.finishReason = .completed
                 signals.append(signal(.finished, value, at: boundary))
             }
         } while remaining > 0 && value.status == .running
         value.lastMonotonic = reading.monotonic; value.lastObservedAt = reading.wall
-        if value.status == .finished { value.lastMonotonic = nil }
+        if value.status != .running { value.lastMonotonic = nil }
         snapshot = value
         return signals
     }
@@ -73,9 +71,16 @@ public struct FocusEngine: Sendable {
     public mutating func resume(at reading: ClockReading) throws -> [FocusSignal] {
         guard var value = snapshot else { throw FocusEngineError.noSession }
         guard value.status == .paused else { if value.status == .running { return [] }; throw FocusEngineError.invalidState }
+        var signals: [FocusSignal] = []
+        if let pendingPhase = value.pendingPhase {
+            value.phase = pendingPhase
+            if pendingPhase == .focus { value.round += 1 }
+            value.phaseElapsed = 0; value.pendingPhase = nil
+            signals.append(signal(pendingPhase == .rest ? .restStarted : .roundStarted, value, at: reading.wall))
+        }
         value.status = .running; value.lastMonotonic = reading.monotonic; value.lastObservedAt = reading.wall
         snapshot = value
-        return [signal(.resumed, value, at: reading.wall)]
+        return [signal(.resumed, value, at: reading.wall)] + signals
     }
 
     @discardableResult
@@ -89,7 +94,7 @@ public struct FocusEngine: Sendable {
             if signals.contains(where: { $0.kind == .finished }) { value.note = note; snapshot = value }
             return signals
         }
-        value.status = .finished; value.lastMonotonic = nil; value.endedAt = reading.wall
+        value.status = .finished; value.lastMonotonic = nil; value.pendingPhase = nil; value.endedAt = reading.wall
         value.lastObservedAt = reading.wall; value.finishReason = .manual; value.note = note
         snapshot = value; signals.append(signal(.finished, value, at: reading.wall))
         return signals

@@ -61,6 +61,12 @@ public struct FocusSnapshot: Codable, Sendable, Equatable, Identifiable {
     public var lastObservedAt: Date
     public var finishReason: FocusFinishReason?
     public var note: String
+    public var pendingPhase: FocusPhase? = nil
+    public var phaseConfirmationID: String? { pendingPhase.map { "\(id):\(round):\($0.rawValue)" } }
+    public var continueTitle: String {
+        guard let pendingPhase else { return phase == .rest ? "继续休息" : "继续专注" }
+        return pendingPhase == .rest ? "开始休息" : "开始第 \(round + 1) 轮专注"
+    }
     public var effectiveSeconds: Int { Int(floor(max(0, effectiveElapsed))) }
     public var remainingSeconds: Int? {
         guard configuration.mode != .countUp else { return nil }
@@ -78,10 +84,16 @@ public struct FocusSnapshot: Codable, Sendable, Equatable, Identifiable {
         if configuration.mode != .pomodoro && (phase != .focus || round != 1) { throw FocusEngineError.damagedSnapshot }
         if configuration.mode == .pomodoro && round > configuration.rounds { throw FocusEngineError.damagedSnapshot }
         if configuration.mode != .countUp && phaseElapsed > Double(phase == .rest ? configuration.restSeconds : configuration.targetSeconds) { throw FocusEngineError.damagedSnapshot }
+        if let pendingPhase {
+            let duration = phase == .rest ? configuration.restSeconds : configuration.targetSeconds
+            let expected: FocusPhase = phase == .focus && configuration.restSeconds > 0 ? .rest : .focus
+            guard configuration.mode == .pomodoro, status == .paused, round < configuration.rounds,
+                  lastMonotonic == nil, phaseElapsed == Double(duration), pendingPhase == expected else { throw FocusEngineError.damagedSnapshot }
+        }
     }
 }
 
-public enum FocusSignalKind: String, Codable, Sendable { case started, paused, resumed, finished, restStarted, roundStarted }
+public enum FocusSignalKind: String, Codable, Sendable { case started, paused, resumed, finished, restStarted, roundStarted, phaseEnded }
 public struct FocusSignal: Codable, Sendable, Identifiable, Equatable {
     public let id: String
     public let kind: FocusSignalKind

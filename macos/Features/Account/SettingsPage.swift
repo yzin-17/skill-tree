@@ -48,12 +48,7 @@ struct SettingsPage: View {
                     if let exportPath { Text("已导出：\(exportPath.path)").font(.caption).textSelection(.enabled).foregroundStyle(AtlasTheme.muted) }
                 }
                 Divider()
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("专注通知").font(.title3.weight(.semibold))
-                    Text(store.notifications.status).font(.callout).foregroundStyle(AtlasTheme.muted)
-                    if store.notifications.enabled { Button("关闭专注通知") { store.notifications.disable() } }
-                    else { Button("开启专注通知") { Task { await store.notifications.enable() } } }
-                }
+                FocusReminderSettings()
                 Divider()
                 Text("Skill Atlas \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.0")").font(.caption).foregroundStyle(AtlasTheme.muted)
             }.padding(28).frame(maxWidth: 900, alignment: .leading).frame(maxWidth: .infinity, alignment: .leading)

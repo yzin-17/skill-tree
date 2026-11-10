@@ -1,41 +1,4 @@
 import AppKit
-import UserNotifications
-
-@MainActor @Observable
-final class FocusNotifications: NSObject, UNUserNotificationCenterDelegate {
-    private(set) var status = "尚未开启"
-    private(set) var enabled = UserDefaults.standard.bool(forKey: "focusNotificationsEnabled")
-    private let center = UNUserNotificationCenter.current()
-    override init() { super.init(); center.delegate = self; Task { await refresh() } }
-    func refresh() async {
-        let settings = await center.notificationSettings()
-        switch settings.authorizationStatus {
-        case .authorized, .provisional: status = enabled ? "已开启" : "已关闭"
-        case .denied: status = "系统通知未允许"
-        default: status = "尚未开启"
-        }
-    }
-    func enable() async {
-        do { enabled = try await center.requestAuthorization(options: [.alert, .sound]); UserDefaults.standard.set(enabled, forKey: "focusNotificationsEnabled"); await refresh() }
-        catch { status = "无法开启通知：\(error.localizedDescription)" }
-    }
-    func disable() { enabled = false; UserDefaults.standard.set(false, forKey: "focusNotificationsEnabled"); status = "已关闭" }
-    func receive(_ signals: [FocusSignal]) {
-        guard enabled else { return }
-        for signal in signals where [.finished, .restStarted, .roundStarted].contains(signal.kind) {
-            let content = UNMutableNotificationContent()
-            switch signal.kind {
-            case .finished: content.title = "专注已保存"; content.body = "这次有效专注 \(AtlasFormat.duration(Int64(signal.effectiveSeconds)))。"
-            case .restStarted: content.title = "休息一下"; content.body = "这一轮专注已结束，休息时长不会计入经验。"
-            default: content.title = "开始下一轮"; content.body = "番茄钟已进入下一轮专注。"
-            }
-            content.sound = .default
-            let request = UNNotificationRequest(identifier: signal.id, content: content, trigger: nil)
-            Task { try? await center.add(request) }
-        }
-    }
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions { [.banner, .sound] }
-}
 
 enum AtlasFormat {
     static func xpForecast(_ seconds: Int) -> String {
@@ -58,22 +21,29 @@ enum AtlasFormat {
 final class FocusRuntime: NSObject, NSMenuDelegate {
     private let store: ApplicationStore
     private let showWindow: () -> Void
+    private let phasePrompt: FocusPhasePrompt
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private var timer: Timer?
     private var activity: NSObjectProtocol?
     private var ticks = 0
-    init(store: ApplicationStore, showWindow: @escaping () -> Void) {
+    init(store: ApplicationStore, window: NSWindow, showWindow: @escaping () -> Void) {
         self.store = store; self.showWindow = showWindow
+        phasePrompt = FocusPhasePrompt(window: window, showWindow: showWindow, onError: { [weak store] message in
+            store?.localError = message; store?.destination = .focus; showWindow()
+        })
         super.init()
         let menu = NSMenu(); menu.delegate = self; item.menu = menu
         item.button?.image = NSImage(systemSymbolName: "timer", accessibilityDescription: "Skill Atlas 专注")
         item.button?.imagePosition = .imageLeading
+        item.button?.font = Self.timerFont
         NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(willSleep), name: NSWorkspace.willSleepNotification, object: nil)
         store.onFocusSignals = { [weak self] _ in self?.update() }
         let timer = Timer(timeInterval: 1, repeats: true) { [weak self] _ in Task { @MainActor in self?.tick() } }
         self.timer = timer; RunLoop.main.add(timer, forMode: .common); update(); menuWillOpen(menu)
     }
+    static var timerFont: NSFont { .monospacedDigitSystemFont(ofSize: NSFont.systemFontSize(for: .small), weight: .regular) }
     func stop() {
+        phasePrompt.dismiss()
         timer?.invalidate(); timer = nil; NSWorkspace.shared.notificationCenter.removeObserver(self)
         if let activity { ProcessInfo.processInfo.endActivity(activity); self.activity = nil }
         NSStatusBar.system.removeStatusItem(item)
@@ -89,10 +59,12 @@ final class FocusRuntime: NSObject, NSMenuDelegate {
         } else if current?.status != .running, let activity { ProcessInfo.processInfo.endActivity(activity); self.activity = nil }
         if let current {
             let seconds = current.remainingSeconds ?? current.effectiveSeconds
-            let state = current.status == .paused ? "暂停" : current.phase == .rest ? "休息" : "专注"
+            let state = current.pendingPhase != nil ? "确认" : current.status == .paused ? "暂停" : current.phase == .rest ? "休息" : "专注"
             item.button?.title = " \(AtlasFormat.clock(seconds)) · \(state)"
         } else { item.button?.title = "" }
-        item.button?.toolTip = "Skill Atlas · \(store.focus?.snapshot == nil ? "开始一次专注" : "专注持续运行")"
+        let hint = current?.pendingPhase != nil ? "等待确认：\(current!.continueTitle)" : current?.status == .paused ? "专注已暂停" : current == nil ? "开始一次专注" : "专注持续运行"
+        item.button?.toolTip = "Skill Atlas · \(hint)"
+        phasePrompt.update(focus: store.focus)
     }
     func menuWillOpen(_ menu: NSMenu) {
         update(); menu.removeAllItems()
@@ -101,7 +73,7 @@ final class FocusRuntime: NSObject, NSMenuDelegate {
         if let focus = store.focus?.snapshot {
             let skill = store.library.skills.first { $0.id == focus.skillId }?.name ?? "当前技能"
             let title = NSMenuItem(title: "\(skill) · 有效 \(AtlasFormat.duration(Int64(focus.effectiveSeconds)))", action: nil, keyEquivalent: ""); title.isEnabled = false; menu.addItem(title)
-            add(menu, focus.status == .running ? "暂停专注" : "继续专注", #selector(togglePause))
+            add(menu, focus.status == .running ? "暂停专注" : focus.continueTitle, #selector(togglePause))
             add(menu, "结束并保存", #selector(finish))
         } else { add(menu, "开始专注…", #selector(openFocus)) }
         if let sync = store.sync, sync.pendingCount + sync.activityCount > 0 {

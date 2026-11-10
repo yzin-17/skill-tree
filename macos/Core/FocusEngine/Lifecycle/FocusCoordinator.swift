@@ -48,6 +48,10 @@ public final class FocusCoordinator {
     }
     public func pause() throws { if snapshot?.status == .running { try mutate { try $0.pause(at: clock()) } } }
     public func resume() throws { try mutate { try $0.resume(at: clock()) }; notice = nil }
+    public func confirmPhase(id: String, finish: Bool = false) throws {
+        guard snapshot?.phaseConfirmationID == id else { return }
+        if finish { try self.finish() } else { try resume() }
+    }
     public func updateNote(_ note: String) throws { try mutate { try $0.updateNote(note); return [] } }
     public func finish(note: String? = nil) throws {
         if snapshot == nil { return }
